@@ -1,5 +1,8 @@
 #!/bin/bash -x
 
+GIT_AWS="https://github.com/jouellnyc/AWS.git"
+GIT_SHOULD="https://github.com/jouellnyc/shouldipickitup.git"
+
 yum update -y
 yum -y install git 
 yum -y install python3 
@@ -20,12 +23,12 @@ chkconfig awslogsd on
 GIT_DIR="/gitrepos/"
 mkdir -p $GIT_DIR
 cd $GIT_DIR/
-git clone https://github.com/jouellnyc/AWS.git
+git clone $GIT_AWS
 cd AWS/boto3/
 read -r  MONGOUSERNAME MONGOPASSWORD MONGOHOST <  <(/usr/bin/python3 ./getSecret.py)
 
 cd $GIT_DIR
-git clone https://github.com/jouellnyc/shouldipickitup.git
+git clone $GIT_SHOULD
 cd shouldipickitup
 sleep 2
 sed -i -r  's#MONGOCLIENTLINE#client = MongoClient("mongodb+srv://MONGOUSERNAME:MONGOPASSWORD@MONGOHOST/test?retryWrites=true\&w=majority", serverSelectionTimeoutMS=2000)#' lib/mongodb.py
