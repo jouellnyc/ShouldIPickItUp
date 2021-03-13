@@ -68,7 +68,7 @@ def err_web(url):
 
     try:
         httprequest = requests.get(
-            url, timeout=10, allow_redirects=True, headers=random.choice(user_agents)
+            url, timeout=45, allow_redirects=True, headers=random.choice(user_agents)
         )
         # raise_for_status() never execs if requests.get above has connect error/timeouts
         httprequest.raise_for_status()
