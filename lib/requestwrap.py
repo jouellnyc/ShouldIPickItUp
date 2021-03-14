@@ -15,12 +15,10 @@
 
 """
 
-import sys
 import requests
 import random
 
-
-def err_web(url):
+def err_web(url, timeout=15):
     """
     Catch the Errors from the Web Requests
     All or nothing here: If not 200 OK - exit the program
@@ -68,24 +66,11 @@ def err_web(url):
 
     try:
         httprequest = requests.get(
-            url, timeout=45, allow_redirects=True, headers=random.choice(user_agents)
+            url, timeout=timeout, allow_redirects=True, headers=random.choice(user_agents)
         )
         # raise_for_status() never execs if requests.get above has connect error/timeouts
         httprequest.raise_for_status()
-    except requests.exceptions.HTTPError as errh:
-        print("HTTP Error:", errh)
-        sys.exit(1)
-    except requests.exceptions.ConnectionError as errc:
-        print("Fatal Error Connecting:", errc)
-        sys.exit(1)
-    except requests.exceptions.Timeout as errt:
-        print("Timeout Error:", errt)
-        sys.exit(1)
-    except requests.exceptions.RequestException as err:
-        print("OOps: Something Else", err)
-        sys.exit(1)
+    except Exception:
+        raise
     else:
         return httprequest
-
-
-err_web("http://www.google.com")

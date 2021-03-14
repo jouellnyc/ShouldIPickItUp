@@ -8,9 +8,10 @@
 """
 
 import re
-import sys
 import json
+import logging
 
+import requests.exceptions
 from bs4 import BeautifulSoup
 from geopy.distance import geodesic
 
@@ -18,6 +19,10 @@ try:
     from lib import requestwrap  # if called from ..main()
 except ModuleNotFoundError:
     import requestwrap  # if called from .
+
+
+class HTTPError(Exception):
+    pass
 
 
 def lookup_craigs_posts(craigs_list_url):
@@ -32,6 +37,7 @@ def lookup_craigs_posts(craigs_list_url):
     craigs_posts : list
         A list of all the BeautifulSoup objects containing free items
     """
+    logging.info(f"Scraping {craigs_list_url}")
     craigs_response = requestwrap.err_web(craigs_list_url)
     craigs_soup = BeautifulSoup(craigs_response.text, "html.parser")
     craigs_posts = craigs_soup.find_all("a", class_="result-title hdrlnk")
@@ -76,7 +82,7 @@ def lookup_miles_from_user(each_item, start_lat, start_lng):
         raise
 
 
-def lookup_price_on_ebay(each_item):
+def lookup_price_on_ebay(each_item, timeout=30):
     """
     Parameters
     ----------
@@ -91,33 +97,45 @@ def lookup_price_on_ebay(each_item):
         AttributeError - a post without any price info
     """
 
-    ebay_url = "https://www.ebay.com/sch/i.html?_from=R40&_trksid=m570.l1313&_nkw="
-    ebay_path = (
-        f"{each_item.text}&_sacat=0&LH_TitleDesc=0&_osacat=0&_odkw={each_item.text}"
-    )
-    ebay_query_url = ebay_url + ebay_path
-    ebay_resp = requestwrap.err_web(ebay_query_url)
-    ebay_soup = BeautifulSoup(ebay_resp.text, "html.parser")
-
     try:
+        ebay_url = "https://www.ebay.com/sch/i.html?_from=R40&_trksid=m570.l1313&_nkw="
+        ebay_path = (
+            f"{each_item.text}&_sacat=0&LH_TitleDesc=0&_osacat=0&_odkw={each_item.text}"
+        )
+        ebay_query_url = ebay_url + ebay_path
+        ebay_resp = requestwrap.err_web(ebay_query_url, timeout=timeout)
+        ebay_soup = BeautifulSoup(ebay_resp.text, "html.parser")
         item = ebay_soup.find("h3", {"class": "s-item__title"}).get_text(separator=" ")
-        print(item)
     except AttributeError:
-        raise ValueError("no match")
+        msg = "No match on Ebay"
+        logging.warning(f"{msg} - {each_item.text}")
+        raise ValueError("{msg}")
+    except requests.exceptions.RequestException as e:
+        logging.error(f"{e} - {each_item.text}")
+        raise HTTPError
+    except Exception as e:
+        msg = "Unhandled"
+        logging.error(f"{msg} - {e} - {each_item.text}")
+        raise ValueError("{msg}")
     else:
+        logging.info(f"Crawled Ebay OK - {item}")
+        # Keep only items with price and links
         try:
             price = ebay_soup.find("span", {"class": "s-item__price"}).get_text()
         except AttributeError:
-            raise ValueError("no price")
+            msg = "No price on Ebay"
+            logging.warning(f"{msg} - {each_item.text}")
+            raise ValueError("{msg}")
         else:
             try:
                 link = ebay_soup.find("a", {"class": "s-item__link"})
                 link = link.attrs["href"]
                 link = link.partition("?")[0]
-                print(link)
             except AttributeError:
-                raise ValueError("price, but no link")
-        return (price, link)
+                msg = "Price, but no link on on Ebay?"
+                logging.warning(f"{msg} - {each_item.text}")
+                raise ValueError("{msg}")
+            return (price, link)
 
 
 def lookup_cost_lyft(start_lat, start_lng, end_lat, end_lng):

@@ -22,10 +22,8 @@ import logging
 from random import randrange
 
 import mongodb
-import requestwrap
 import websitepuller
 import pickledata
-from pymongo.errors import ConnectionFailure
 
 
 # "crawler.log"
@@ -80,7 +78,7 @@ def get_city_from_first_free_cl_item(craigs_list_url):
         return None
 
 
-def get_ebay_data(craigs_local_posts, random="yes", howmany=12):
+def get_ebay_data(craigs_local_posts, random="yes", howmany=12, timeout=30):
 
     if random == "yes":
         sleep = randrange(15, 45)
@@ -90,21 +88,22 @@ def get_ebay_data(craigs_local_posts, random="yes", howmany=12):
     ebay_links = []
     for each in craigs_local_posts[0:howmany]:
         try:
-            price, eb_link = websitepuller.lookup_price_on_ebay(each)
+            price, eb_link = websitepuller.lookup_price_on_ebay(each,timeout=timeout)
         except ValueError:
-            price = "No intere$t on Ebay$"
-            link = "No $$ data on Ebay$"
+            continue
+        except websitepuller.HTTPError:
+            continue
         else:
-            price = price.replace("$", "")
             try:
+                price = price.replace("$", "")
                 float(price)
             except ValueError:
                 price = "No $ data on Ebay$"
+                continue
             else:
                 price = price
-        finally:
-            ebay_prices.append(price)
-            ebay_links.append(eb_link)
+                ebay_prices.append(price)
+                ebay_links.append(eb_link)
         time.sleep(sleep)
     return ebay_prices, ebay_links
 
@@ -141,7 +140,15 @@ def format_mongodocs(soup_object, ebay_prices, ebay_links, howmany=12):
                 }
     """
     mongo_filter = {"craigs_url": craigs_list_url}
-    mongo_doc = {"$set": {"Items": {}, "Urls": {}, "Prices": {}, "EbayLinks": {}, "DateCrawled" : ''}}
+    mongo_doc = {
+        "$set": {
+            "Items": {},
+            "Urls": {},
+            "Prices": {},
+            "EbayLinks": {},
+            "DateCrawled": "",
+        }
+    }
 
     for num, each_item in enumerate(soup_object[0:howmany], start=1):
         each_link = each_item.attrs["href"]
@@ -169,27 +176,44 @@ if __name__ == "__main__":
     try:
 
         verbose = True
-        howmany = 12
+        timeout = 45
+        howmany = 10 
         craigs_list_url = sys.argv[1]
         noindex = sys.argv[2]
-        print(craigs_list_url)
+
+        msg = f"==== Connecting to {craigs_list_url} ===="
+        print(msg)
+        logging.info(msg)
         craig_posts = get_craigs_list_posts(craigs_list_url)
+        for x in craig_posts:
+            logging.info(f"Picked up {x}")
+
+        msg = f"==== Connecting to Ebay - {timeout}s timeout ===="
+        print(msg)
+        logging.info(msg)
         ebay_prices, ebay_links = get_ebay_data(
-            craig_posts, random="no", howmany=howmany
+            craig_posts, random="no", howmany=howmany, timeout = timeout
         )
+        logging.info("Ending Crawl")
+
+        print("==== Formatting Docs  ====")
         mongo_doc = format_mongodocs(
             craig_posts, ebay_prices, ebay_links, howmany=howmany
         )
+
         mongo_filter = {"craigs_url": craigs_list_url}
         if verbose:
             print(mongo_doc)
 
-    except IndexError as e:
-        print("URL or Indexing?")
+    except IndexError:
+        print("URL or noidex?")
         sys.exit()
 
     except (ValueError, NameError) as e:
-        logging.exception(e)
+        logging.exception(f"Data Issue: {e}")
+
+    except Exception as e:
+        logging.exception(f"Unhandled Crawl error: {e}")
 
     else:
         if noindex == "noindex":
@@ -200,14 +224,7 @@ if __name__ == "__main__":
             try:
                 mongo_cli = mongodb.MongoCli()
                 mongo_cli.update_one_document(mongo_filter, mongo_doc)
-            except ConnectionFailure as e:
-                logging.error(e)
-                if verbose:
-                    print(e)
             except Exception as e:
-                msg = "Uncaught Error"
-                if verbose:
-                    print(f"{msg}: Check crawl log")
-                logging.exception(f"{msg}: {e}")
+                logging.exception(f"Database related error: {e}")
             else:
                 print("Sent to Mongo Success")
