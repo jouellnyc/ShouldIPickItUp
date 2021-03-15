@@ -173,8 +173,13 @@ def get_ebay_data(craig_raw_posts, random="yes", howmany=12, timeout=30):
     
     for each_post in craig_raw_posts:
     
+            
+            print("C", count)
+            print("EP", each_post)
+        
             try:
                 price, eb_link = lookup_price_on_ebay(each_post,timeout=timeout)
+                print("P", price, "EB", eb_link )
             except ValueError:
                 continue
             except HTTPError:
@@ -191,6 +196,7 @@ def get_ebay_data(craig_raw_posts, random="yes", howmany=12, timeout=30):
                     craig_posts_with_data.append(each_post)
                     count+=1
                     if count == howmany:
+                        print(f"{howmany} items achieved")
                         break
             logging.info(f"Sleeping {sleep} seconds")        
             time.sleep(sleep)
