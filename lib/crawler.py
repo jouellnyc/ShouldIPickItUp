@@ -16,10 +16,8 @@
 
 import os
 import sys
-import time
 import datetime
 import logging
-from random import randrange
 
 import mongodb
 import websitepuller
@@ -36,80 +34,9 @@ logging.basicConfig(
 )
 
 
-def get_craigs_list_posts(craigs_list_url):
-    """ Connect to Craigslist and Get Data Free posts
-
-    Parameters
-    ----------
-    craigs_list_url
-        str - local Craigs List Url
-
-    Returns
-    -------
-    craigs_local_posts
-        beautiful soup_object - list of all free items
-    """
-    if "newyork" in craigs_list_url:
-
-        try:
-            proto, _, url, suffix, *other = craigs_list_url.split("/")
-        except Exception as e:
-            print("New York URL unpacking error?", str(e))
-            raise
-        else:
-            craigs_local_url = (
-                f"{proto}//{url}/d/free-stuff/search/{suffix}/zip"  # https://
-            )
-
-    else:
-        craigs_local_url = craigs_list_url + "/d/free-stuff/search/zip"
-
-    craigs_local_posts = websitepuller.lookup_craigs_posts(craigs_local_url)
-    return craigs_local_posts
-
-
-def get_city_from_first_free_cl_item(craigs_list_url):
-    first_item_soup = get_craigs_list_posts(craigs_list_url)[0]
-    url = first_item_soup.attrs["href"]
-    city = websitepuller.lookup_city_from_cl_url(url)
-    if city is not None:
-        return city
-    else:
-        return None
-
-
-def get_ebay_data(craigs_local_posts, random="yes", howmany=12, timeout=30):
-
-    if random == "yes":
-        sleep = randrange(15, 45)
-    else:
-        sleep = 0
-    ebay_prices = []
-    ebay_links = []
-    for each in craigs_local_posts[0:howmany]:
-        try:
-            price, eb_link = websitepuller.lookup_price_on_ebay(each,timeout=timeout)
-        except ValueError:
-            continue
-        except websitepuller.HTTPError:
-            continue
-        else:
-            try:
-                price = price.replace("$", "")
-                float(price)
-            except ValueError:
-                price = "No $ data on Ebay$"
-                continue
-            else:
-                price = price
-                ebay_prices.append(price)
-                ebay_links.append(eb_link)
-        time.sleep(sleep)
-    return ebay_prices, ebay_links
-
-
 def format_mongodocs(soup_object, ebay_prices, ebay_links, howmany=12):
     """ Return Formatted Mongdo Doc
+    
     Parameters
     ----------
     soup_object
@@ -177,33 +104,36 @@ if __name__ == "__main__":
 
         verbose = True
         timeout = 45
-        howmany = 10 
+        howmany = 15 
         craigs_list_url = sys.argv[1]
         noindex = sys.argv[2]
+
 
         msg = f"==== Connecting to {craigs_list_url} ===="
         print(msg)
         logging.info(msg)
-        craig_posts = get_craigs_list_posts(craigs_list_url)
-        for x in craig_posts:
-            logging.info(f"Picked up {x}")
+        craig_raw_posts = websitepuller.get_craigs_list_free_posts(craigs_list_url)
+        for x in craig_raw_posts:
+            logging.info(f"Picked up {x.get('href')} - {x.getText()}")
 
-        msg = f"==== Connecting to Ebay - {timeout}s timeout ===="
+
+        msg = f"==== Connecting to Ebay - {timeout}s timeout, {howmany} items ===="
         print(msg)
         logging.info(msg)
-        ebay_prices, ebay_links = get_ebay_data(
-            craig_posts, random="no", howmany=howmany, timeout = timeout
+        craig_posts_with_data, ebay_prices, ebay_links = websitepuller.get_ebay_data(
+            craig_raw_posts, random="yes", howmany=howmany, timeout=timeout
         )
-        logging.info("Ending Crawl")
+        logging.info("Ending Crawl of {craigs_list_url}")
+
 
         print("==== Formatting Docs  ====")
         mongo_doc = format_mongodocs(
-            craig_posts, ebay_prices, ebay_links, howmany=howmany
+            craig_posts_with_data, ebay_prices, ebay_links, howmany=howmany
         )
-
         mongo_filter = {"craigs_url": craigs_list_url}
         if verbose:
             print(mongo_doc)
+
 
     except IndexError:
         print("URL or noidex?")
@@ -223,8 +153,15 @@ if __name__ == "__main__":
             print("Sending to Mongo")
             try:
                 mongo_cli = mongodb.MongoCli()
-                mongo_cli.update_one_document(mongo_filter, mongo_doc)
+                if mongo_cli.dbh:
+                    print(mongo_filter, mongo_doc)
+                    mongo_cli.update_one_document(mongo_filter, mongo_doc)
+                else:
+                    msg='Cannot connect to Mongo'
+                    logging.exception(msg)
+                    print(msg)
+                    sys.exit(1)
             except Exception as e:
-                logging.exception(f"Database related error: {e}")
+                logging.exception(f"Unhandled Database related error: {e}")
             else:
                 print("Sent to Mongo Success")
