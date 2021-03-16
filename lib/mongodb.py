@@ -29,7 +29,6 @@
 TBD: Reuse the MongoDB handles once per app vs per instance.
 """
 
-import pymongo
 from pymongo import MongoClient
 from pymongo.errors import BulkWriteError
 from pymongo.errors import ConnectionFailure
@@ -57,12 +56,8 @@ class MongoCli:
     collection_name = "data"
 
     def __init__(self):
-        dbh = self.ConnectToMongo()
-        if dbh is None:
-            raise ConnectionFailure
-        else:
-            self.dbh = dbh
-
+        self.dbh = self.ConnectToMongo()
+        
     def ConnectToMongo(self, database_name="shouldipickitup", collection_name="data"):
         """
         Return a database_handle to the caller
@@ -123,9 +118,9 @@ class MongoCli:
                 all_data.Urls = response["Urls"]
                 all_data.Prices = response["Prices"]
                 all_data.EBlinks = response["EbayLinks"]
-            except KeyError as e:
+            except KeyError:
                 raise ValueError("No details in MongoDB:" + str(zip))
-            except Exception as e:
+            except Exception:
                 raise
             else:
                 return all_data
@@ -254,8 +249,7 @@ class MongoCli:
         except BulkWriteError as bwe:
             print(bwe.details)
             raise
-        except Exception as e:
-            # logging.exception(e)
+        except Exception:
             raise
         else:
             if verbose:
@@ -302,7 +296,7 @@ if __name__ == "__main__":
             zips, altzips = mg.lookup_zips_given_craigs_url(sys.argv[1])
             print("Zips", zips, "\n")
             print("AltZips", altzips)
-    except ConnectionFailure as e:
+    except (ConnectionFailure, ServerSelectionTimeoutError ) as e:
         print("MongoDB ConnectionFailure: ", e)
         print("Is your IP whitelisted?")
     except Exception as e:
