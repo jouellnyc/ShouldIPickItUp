@@ -145,12 +145,8 @@ if __name__ == "__main__":
     try:
         zipcode = sys.argv[1]
     except IndexError as err:
-        msg = "Did you specify a zipcode?"
-        err = str(err)
-        err += f" : {msg}"
-        print(err)
-        local_log = AppLog()
-        logger.error(f"{err} => {str(e)}")
+        msg = "Did you specify a zipcode or a url?"
+        print(msg)
         sys.exit()
     else:
         print("Main: ", main(zipcode))
