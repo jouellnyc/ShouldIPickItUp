@@ -34,43 +34,46 @@ logging.basicConfig(
 )
 
 
+def print_and_log(msg):
+        print(msg) 
+        logging.info(msg)
+    
+    
 if __name__ == "__main__":
 
     try:
 
         verbose = True
         timeout = 45
-        howmany = 15 
+        howmany = 15
         craigs_list_url = sys.argv[1]
         noindex = sys.argv[2]
 
 
         msg = f"==== Connecting to {craigs_list_url} ===="
-        print(msg)
-        logging.info(msg)
+        print_and_log(msg)
         craig_raw_posts = websitepuller.get_craigs_list_free_posts(craigs_list_url)
         for x in craig_raw_posts:
+            logging.info(f"Picked up {len(craig_raw_posts)}")
             logging.info(f"Picked up {x.get('href')} - {x.getText()}")
-
-
-        msg = f"==== Connecting to Ebay - {timeout}s timeout, {howmany} items ===="
-        print(msg)
-        logging.info(msg)
+            
+            
+        msg = f"==== Connecting to Ebay - {timeout}s timeout, {howmany} items max to retrieve ===="
+        print_and_log(msg)    
         craig_posts_with_data, ebay_prices, ebay_links = websitepuller.get_ebay_data(
             craig_raw_posts, random="yes", howmany=howmany, timeout=timeout
         )
-        logging.info("Ending Crawl of {craigs_list_url}")
+        logging.info(f"Ending Crawl of {craigs_list_url}")
 
 
-        print("==== Formatting Docs  ====")
-        
+        msg="==== Formatting Docs  ===="
+        print_and_log(msg)        
         mongo_filter = {"craigs_url": craigs_list_url}
-        
         mongo_doc = format_mongodocs(
             mongo_filter, craig_posts_with_data, ebay_prices, ebay_links, howmany=howmany
         )
         
-        
+                
     except IndexError:
         print("URL or noidex?")
         sys.exit()
@@ -86,7 +89,8 @@ if __name__ == "__main__":
             print("Pickling...")
             pickledata.save(mongo_doc)
         else:
-            print("Sending to Mongo")
+            msg="Sending to Mongo"
+            print_and_log(msg)
             try:
                 mongo_cli = mongodb.MongoCli()
                 if mongo_cli.dbh:
@@ -101,6 +105,6 @@ if __name__ == "__main__":
             except Exception as e:
                 logging.exception(f"Unhandled Database related error: {e}")
             else:
-                print("Sent to Mongo Success")
+                msg = "Sent to Mongo Success"
+                print_and_log(msg)        
 
-                

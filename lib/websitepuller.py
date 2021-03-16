@@ -135,6 +135,9 @@ def get_craigs_list_free_posts(craigs_list_url):
     -------
     craigs_free_posts
         beautiful soup_object - list of all free items
+        
+        craig_posts_with_data, ebay_prices, ebay_links
+        
     """
 
     if "newyork" in craigs_list_url:
@@ -161,6 +164,21 @@ def get_craigs_list_free_posts(craigs_list_url):
 
 def get_ebay_data(craig_raw_posts, random="yes", howmany=12, timeout=30):
 
+    """
+    Parameters
+    ----------
+    craig_raw_posts: BeautifulSoup objects collected from free posts
+    random: string - whether to randomize sleeping crawling Ebay
+    howmany: int - how many items with prices to collect
+    timeout: int - Ebay Crawl Timout
+        
+    Returns
+    -------
+    craig_posts_with_data - list of items with prices scraped from Ebay
+    ebay_prices - list of those prices
+    ebay_links  - list of those links
+    """
+
     if random == "yes":
         sleep = randrange(15, 45)
     else:
@@ -171,15 +189,12 @@ def get_ebay_data(craig_raw_posts, random="yes", howmany=12, timeout=30):
     
     count=0
     
-    for each_post in craig_raw_posts:
-    
-            
-            print("C", count)
-            print("EP", each_post)
+    for num, each_post in enumerate(craig_raw_posts):
+           
+            logging.info(f"Count of items with price and link: {count}")
         
             try:
-                price, eb_link = lookup_price_on_ebay(each_post,timeout=timeout)
-                print("P", price, "EB", eb_link )
+                price, eb_link = lookup_price_on_ebay(num, each_post,timeout=timeout)
             except ValueError:
                 continue
             except HTTPError:
@@ -196,26 +211,28 @@ def get_ebay_data(craig_raw_posts, random="yes", howmany=12, timeout=30):
                     craig_posts_with_data.append(each_post)
                     count+=1
                     if count == howmany:
-                        print(f"{howmany} items achieved")
+                        logging.info(f"{howmany} items achieved Stopping Crawl")
                         break
             logging.info(f"Sleeping {sleep} seconds")        
             time.sleep(sleep)
             
     return craig_posts_with_data, ebay_prices, ebay_links
 
-def lookup_price_on_ebay(each_post, timeout=30):
+def lookup_price_on_ebay(num, each_post, timeout=30):
     """
     Parameters
     ----------
     each_post : BeautifulSoup object - bs4.element.Tag
         Pointer to each free item
 
+    num: Index from enumerate()
+    
     Returns
     -------
     price - string
         Price as per Ebay
     Exceptions
-        AttributeError - a post without any price info
+        ValueError- a post without price and link info
     """
 
     try:
@@ -224,39 +241,41 @@ def lookup_price_on_ebay(each_post, timeout=30):
             f"{each_post.text}&_sacat=0&LH_TitleDesc=0&_osacat=0&_odkw={each_post.text}"
         )
         ebay_query_url = ebay_url + ebay_path
-        logging.info(f"Querying {ebay_query_url}")
+        logging.info(f"{num} - Querying {ebay_query_url}")
         ebay_resp = requestwrap.err_web(ebay_query_url, timeout=timeout)
         ebay_soup = BeautifulSoup(ebay_resp.text, "html.parser")
         ebay_item_text = ebay_soup.find("h3", {"class": "s-item__title"}).get_text(separator=" ")
     except AttributeError:
-        msg = "No match on Ebay"
+        msg = f"{num} - No match on Ebay"
         logging.warning(f"{msg} for {each_post.text}")
         raise ValueError("{msg}")
     except requests.exceptions.RequestException as e:
-        logging.error(f"{e} - {each_post.text}")
+        logging.error(f"{num} - {e} - {each_post.text}")
         raise HTTPError
     except Exception as e:
         msg = "Unhandled"
-        logging.error(f"{msg} - {e} - {each_post.text}")
+        logging.error(f"{msg} - {num} - {e} - {each_post.text}")
         raise ValueError("{msg}")
     else:
-        logging.info(f"Crawled Ebay OK - search returned: {ebay_item_text}")
+        logging.info(f"{num} - Crawled Ebay OK - search returned: {ebay_item_text}")
         # Keep only items with price and links
         try:
             price = ebay_soup.find("span", {"class": "s-item__price"}).get_text()
         except AttributeError:
-            msg = "No price on Ebay"
+            msg = f"{num} - No price on Ebay"
             logging.warning(f"{msg}  for {ebay_item_text}")
             raise ValueError("{msg}")
         else:
             try:
-                link = ebay_soup.find("a", {"class": "s-item__link"})
-                link = link.attrs["href"]
-                link = link.partition("?")[0]
+                eb_link = ebay_soup.find("a", {"class": "s-item__link"})
+                eb_link = eb_link.attrs["href"]
+                eb_link = eb_link.partition("?")[0]
             except AttributeError:
                 msg = "Price, but no link on on Ebay?"
                 logging.warning(f"{msg} for  {ebay_item_text}")
                 raise ValueError("{msg}")
-            return (price, link)
+            else:
+                logging.info(f"{num} - Retrieved price of {price} at {eb_link}")
+            return (price, eb_link)
 
 
