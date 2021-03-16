@@ -162,6 +162,15 @@ class MongoCli:
         else:
             return (response["Zips"], response["AltZips"])
 
+
+    def lookup_crawled_date_given_craigs_url(self, craigs_url):
+        response = self.dbh.find_one({"craigs_url": craigs_url})
+        if response is None:
+            raise ValueError("No data in MongoCli for " + str(craigs_url))
+        else:
+            return response["DateCrawled"]
+
+
     def lookup_craigs_posts(self, zip):
         """
         Return only free items post to the caller

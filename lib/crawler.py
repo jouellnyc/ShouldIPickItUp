@@ -17,6 +17,7 @@
 import os
 import sys
 import logging
+import datetime
 
 import mongodb
 import websitepuller
@@ -35,29 +36,53 @@ logging.basicConfig(
 
 
 def print_and_log(msg):
-        print(msg) 
-        logging.info(msg)
+    print(msg) 
+    logging.info(msg)
     
+def connect_to_mongo():
+    try:
+        mongo_cli = mongodb.MongoCli()
+    except Exception:
+        msg='Cannot connect to Mongo'
+        logging.exception(msg)
+        raise
+    else:
+        return mongo_cli
+           
+            
     
 if __name__ == "__main__":
 
     try:
 
         verbose = True
-        timeout = 45
         howmany = 15
-        craigs_list_url = sys.argv[1]
+        timeout = 45
+        check_crawl_date = True
         noindex = sys.argv[2]
-
-
+        craigs_list_url = sys.argv[1]
+        
+        if check_crawl_date:
+            print_and_log(f"...Checking Crawl Date for {craigs_list_url}")        
+            old_enough = 3
+            mongo_cli = connect_to_mongo()
+            date_crawled = mongo_cli.lookup_crawled_date_given_craigs_url(craigs_list_url)
+            difference = datetime.datetime.utcnow() - date_crawled
+            
+            if difference.days >  old_enough:
+                print_and_log(f"Crawling and Indexing {craigs_list_url} - Crawl date more than {old_enough} days")
+                pass
+            else:
+                print_and_log(f"Passing on {craigs_list_url} - crawled within {old_enough} days")
+                sys.exit(1)
+        
         msg = f"==== Connecting to {craigs_list_url} ===="
         print_and_log(msg)
         craig_raw_posts = websitepuller.get_craigs_list_free_posts(craigs_list_url)
+        logging.info(f"Picked up {len(craig_raw_posts)} items from Craigslist")
         for x in craig_raw_posts:
-            logging.info(f"Picked up {len(craig_raw_posts)}")
             logging.info(f"Picked up {x.get('href')} - {x.getText()}")
-            
-            
+                        
         msg = f"==== Connecting to Ebay - {timeout}s timeout, {howmany} items max to retrieve ===="
         print_and_log(msg)    
         craig_posts_with_data, ebay_prices, ebay_links = websitepuller.get_ebay_data(
@@ -79,7 +104,7 @@ if __name__ == "__main__":
         sys.exit()
 
     except (ValueError, NameError) as e:
-        logging.exception(f"Data Issue: {e}")
+        logging.exception(f"Data or other Issue: {e}")
 
     except Exception as e:
         logging.exception(f"Unhandled Crawl error: {e}")
@@ -92,7 +117,7 @@ if __name__ == "__main__":
             msg="Sending to Mongo"
             print_and_log(msg)
             try:
-                mongo_cli = mongodb.MongoCli()
+                mongo_cli = connect_to_mongo()
                 if mongo_cli.dbh:
                     if verbose:
                         print(mongo_filter, mongo_doc)
