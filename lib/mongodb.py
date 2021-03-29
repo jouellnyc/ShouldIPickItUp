@@ -74,7 +74,7 @@ class MongoCli:
             collection_handle :  pymongo connect object
         """
         try:
-            client = MongoClient("mongodb+srv://shouldiuser:oGIcLH7w9vMoPYA6@shouldipickitup-efxrf.mongodb.net/test?retryWrites=true&w=majority", serverSelectionTimeoutMS=2000)
+            MONGOCLIENTLINE
             client.server_info()
             database_handle = client[database_name]
             collection_handle = database_handle[collection_name]
