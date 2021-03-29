@@ -74,7 +74,7 @@ class MongoCli:
             collection_handle :  pymongo connect object
         """
         try:
-            MONGOCLIENTLINE
+            client = MongoClient("mongodb+srv://shouldiuser:oGIcLH7w9vMoPYA6@shouldipickitup-efxrf.mongodb.net/test?retryWrites=true&w=majority", serverSelectionTimeoutMS=2000)
             client.server_info()
             database_handle = client[database_name]
             collection_handle = database_handle[collection_name]
@@ -163,7 +163,7 @@ class MongoCli:
             return (response["Zips"], response["AltZips"])
 
 
-    def lookup_crawled_date_given_craigs_url(self, craigs_url):
+    def lookup_crawled_date(self, craigs_url):
         response = self.dbh.find_one({"craigs_url": craigs_url})
         if response is None:
             raise ValueError("No data in MongoCli for " + str(craigs_url))
