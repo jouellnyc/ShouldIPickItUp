@@ -163,7 +163,7 @@ class MongoCli:
             return (response["Zips"], response["AltZips"])
 
 
-    def lookup_crawled_date(self, craigs_url):
+    def lookup_crawled_date_given_craigs_url(self, craigs_url):
         response = self.dbh.find_one({"craigs_url": craigs_url})
         if response is None:
             raise ValueError("No data in MongoCli for " + str(craigs_url))
