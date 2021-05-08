@@ -92,12 +92,14 @@ In [21]: %run craigs_lyft_ebay.py
 * 0.1.X
     * Testing MemCached and Basic Setup
 
-## Installing
+## Installing Locally
 ```
 git clone https://github.com/jouellnyc/shouldipickitup.git
 cd shouldipickitup
-docker-compose  up -d
+docker-compose -f docker-compose.local.yaml  up  -d
 ```
+## Deploying on AWS
+see https://github.com/jouellnyc/AWS/tree/master/boto3/blue_green_deploy and use user_data.http.AWS.sh in this repo. 
 
 ## Architechure
 - Nginx will listen on the local host's port 80
