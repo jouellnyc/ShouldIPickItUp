@@ -62,7 +62,7 @@ In [21]: %run craigs_lyft_ebay.py
 
 ## Release History
 * 0.5.7
-    * CHANGE: http://beta.shouldipickitup.com/ has launched with the intent to be stable/up %100
+    * CHANGE: Allow Each city in NYC to be specifically crawl w/their native urls. 
 * 0.5.6
     * CHANGE: Integrate PAAS - hosted  MongoDB Atlas
 * 0.5.5
