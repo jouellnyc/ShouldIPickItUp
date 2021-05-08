@@ -74,7 +74,7 @@ class MongoCli:
             collection_handle :  pymongo connect object
         """
         try:
-            MONGOCLIENTLINE
+            client = MONGOCLIENTLINE
             client.server_info()
             database_handle = client[database_name]
             collection_handle = database_handle[collection_name]
