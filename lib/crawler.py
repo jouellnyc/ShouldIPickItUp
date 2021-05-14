@@ -21,6 +21,7 @@ import datetime
 
 import mongodb
 import websitepuller
+from formatter import format_mongodocs
 
 # "crawler.log"
 logname = os.path.splitext(os.path.basename(__file__))[0] + ".log"
