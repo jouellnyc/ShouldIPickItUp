@@ -57,7 +57,6 @@ if __name__ == "__main__":
    
     try:
 
-        #noindex = sys.argv[1]
         mongo_cli = connect_to_mongo()
         one_craigs_urls = mongo_cli.dump_all_craigs_urls_sorted_by_date()
         
@@ -99,11 +98,7 @@ if __name__ == "__main__":
             mongo_doc = format_mongodocs(
                 mongo_filter, craig_posts_with_data, ebay_prices, ebay_links, howmany=howmany
             )
-            
-    except IndexError:
-        print("URL or noidex?")
-        sys.exit()
-    
+         
     except (ValueError, NameError) as e:
             logging.exception(f"Data or other Issue: {e}")
     
