@@ -189,7 +189,7 @@ def get_ebay_data(craig_raw_posts, random="yes", howmany=12, timeout=30):
     
     count=0
     
-    for num, each_post in enumerate(craig_raw_posts):
+    for num, each_post in enumerate(craig_raw_posts, 1):
            
             logging.info(f"Count of items with price and link: {count}")
         
