@@ -54,34 +54,34 @@ if __name__ == "__main__":
 
         for one_craigs_url in all_craigs_urls:
             
-            logging.info(f"...Checking Crawl Date for {one_craigs_url}")
+            logging.info(f"==== Checking Crawl Date for {one_craigs_url} ===")
 
             if url_is_old_enough_to_crawl(old_enough):
                 logging.info(
-                    f"Crawling and Indexing {one_craigs_url} - Crawl date more than {old_enough} days"
+                    f"== Crawling and Indexing {one_craigs_url} - Crawl date more than {old_enough} days =="
                 )
             else:
                 logging.info(
-                    f"Passing on {one_craigs_url} - crawled within {old_enough} days"
+                    f"== Passing on {one_craigs_url} - crawled within {old_enough} days =="
                 )
                 continue
 
-            logging.info(f"==== Connecting to {one_craigs_url} ====")
+            logging.info(f"= Connecting to {one_craigs_url} =")
             craig_raw_posts = websitepuller.get_craigs_list_free_posts(one_craigs_url)
-            logging.info(f"Picked up {len(craig_raw_posts)} items from Craigslist")
+            logging.info(f"= Picked up {len(craig_raw_posts)} items from Craigslist =")
 
             for x in craig_raw_posts:
                 logging.info(f"Picked up {x.get('href')} - {x.getText()}")
 
             logging.info(
-                f"==== Connecting to Ebay - {timeout}s timeout, {howmany} items max to retrieve ===="
+                f"= Connecting to Ebay - {timeout}s timeout, {howmany} items max to retrieve ="
             )
             craig_posts_with_data, ebay_prices, ebay_links = websitepuller.get_ebay_data(
                 craig_raw_posts, random="yes", howmany=howmany, timeout=timeout
             )
-            logging.info(f"Ending Crawl of {one_craigs_url}")
+            logging.info(f"= Ending Crawl of {one_craigs_url} =")
 
-            logging.info("==== Formatting Docs  ====")
+            logging.info("= Formatting Docs  =")
             mongo_filter = {"craigs_url": one_craigs_url}
             
             mongo_doc = format_mongodocs(
@@ -92,7 +92,7 @@ if __name__ == "__main__":
                 howmany=howmany,
             )
 
-            logging.info("Sending to Mongo")
+            logging.info("= Sending Data to Mongo =")
             mongo_cli.update_one_document(mongo_filter, mongo_doc)
 
     except (ValueError, NameError) as e:
