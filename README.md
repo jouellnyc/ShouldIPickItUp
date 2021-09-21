@@ -60,8 +60,6 @@ In [21]: %run craigs_lyft_ebay.py
 
 
 ## Release History
-* 0.5.7
-    * CHANGE: http://beta.shouldipickitup.com/ has launched with the intent to be stable/up %100
 * 0.5.6
     * CHANGE: Integrate PAAS - hosted  MongoDB Atlas
 * 0.5.5
@@ -72,8 +70,6 @@ In [21]: %run craigs_lyft_ebay.py
     * CHANGE: passed Nessus Web Scans; Locked down nginx configs; use non-root users in all containers
 * 0.5.2
     * CHANGE: Dockerized - 3 containers using  Docker Networking'
-* 0.5.1
-    * http://dev.shouldipickitup.com/ has launched (no uptime guarantee; still testing)
 * 0.5.0
     * CHANGE: Use Gunicorn 20.0.4 as WSGI server and Nginx as Website with proxy_pass
 * 0.4.4
