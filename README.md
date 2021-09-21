@@ -1,5 +1,4 @@
 # Given a free listing on Craiglist, should I pick it up?  
-www.shouldipickitup.com
 
 NOTES:
  - This project is intentionally "in progress".
