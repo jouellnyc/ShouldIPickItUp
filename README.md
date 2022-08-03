@@ -40,7 +40,9 @@ John Ouellette – [@jjouell](https://twitter.com/jjouell) – twitter[1:]@gmail
 4. Push to the branch (`git push origin feature/fooBar`)
 5. Create a new Pull Request
 
-## (Future work) High Level Command line Usage example with Lyft Integration
+## Future work 
+
+High Level Command line Usage example with Lyft Integration
 
 ```
 In [21]: %run craigs_lyft_ebay.py
