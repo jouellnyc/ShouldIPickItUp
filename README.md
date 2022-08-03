@@ -1,5 +1,9 @@
 # Given a free listing on Craiglist, should I pick it up?  
 
+- Query the site with your zipcode and the site return free items in your area.
+- Data pulled from Craiglist and Matched with Ebay.
+- The decision to pick it up or not is ultimately yours.
+
 NOTES:
  - This project is intentionally "in progress".
  - It serves for inspiration for anyone to learn Python, Flask, MongoDB, Devops principles.
