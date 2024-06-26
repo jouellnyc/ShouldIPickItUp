@@ -29,9 +29,6 @@ docker-compose  up -d
 ## Requirements
 git/docker/docker-compose
 
-## Meta
-John Ouellette – [@jjouell](https://twitter.com/jjouell) – twitter[1:]@gmail.com
-
 ## Contributing
 
 1. Fork it.
